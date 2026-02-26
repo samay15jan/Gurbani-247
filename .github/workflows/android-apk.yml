@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android Release APK
 
 on:
   workflow_dispatch:
@@ -30,9 +30,13 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --non-interactive
 
-      - name: Build release APK (standalone)
+      - name: Clean Android build
         working-directory: android
-        run: ./gradlew assembleRelease
+        run: ./gradlew clean
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --stacktrace --info
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
