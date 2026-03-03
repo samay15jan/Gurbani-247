@@ -1,3 +1,4 @@
+import "./global.css"
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -10,7 +11,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import './global.css';
 
 const STREAM_URL = 'https://gurbanikirtan.radioca.st/start.mp3';
 const SONG_URL = 'https://gurbanikirtan.radioca.st/currentsong?sid=1';
