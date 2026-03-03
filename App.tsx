@@ -1,4 +1,4 @@
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -10,15 +10,15 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import "./global.css"
+import './global.css';
 
 const STREAM_URL = 'https://gurbanikirtan.radioca.st/start.mp3';
 const SONG_URL = 'https://gurbanikirtan.radioca.st/currentsong?sid=1';
-const BAR_COUNT = 20;
+const BAR_COUNT = 24;
 
 function Visualizer({ isPlaying }: { isPlaying: boolean }) {
   const bars = useMemo(
-    () => Array.from({ length: BAR_COUNT }, () => new Animated.Value(0.15)),
+    () => Array.from({ length: BAR_COUNT }, () => new Animated.Value(0.16)),
     [],
   );
 
@@ -27,14 +27,14 @@ function Visualizer({ isPlaying }: { isPlaying: boolean }) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(bar, {
-            toValue: isPlaying ? Math.random() * 0.9 + 0.2 : 0.15,
-            duration: 260 + idx * 14,
+            toValue: isPlaying ? Math.random() * 0.95 + 0.15 : 0.16,
+            duration: 190 + idx * 12,
             easing: Easing.inOut(Easing.quad),
             useNativeDriver: false,
           }),
           Animated.timing(bar, {
-            toValue: isPlaying ? Math.random() * 0.9 + 0.2 : 0.15,
-            duration: 300 + idx * 14,
+            toValue: isPlaying ? Math.random() * 0.95 + 0.15 : 0.16,
+            duration: 230 + idx * 12,
             easing: Easing.inOut(Easing.quad),
             useNativeDriver: false,
           }),
@@ -45,7 +45,7 @@ function Visualizer({ isPlaying }: { isPlaying: boolean }) {
     if (isPlaying) {
       animations.forEach((animation) => animation.start());
     } else {
-      bars.forEach((bar) => bar.setValue(0.15));
+      bars.forEach((bar) => bar.setValue(0.16));
     }
 
     return () => {
@@ -54,14 +54,14 @@ function Visualizer({ isPlaying }: { isPlaying: boolean }) {
   }, [bars, isPlaying]);
 
   return (
-    <View className="mt-8 h-20 w-full flex-row items-end justify-between px-1">
+    <View className="mt-8 h-24 w-full flex-row items-end justify-between rounded-2xl border border-slate-700/70 bg-slate-950/70 px-2 py-3">
       {bars.map((bar, idx) => (
         <Animated.View
           key={idx}
           style={{
             height: bar.interpolate({
               inputRange: [0, 1.2],
-              outputRange: [8, 76],
+              outputRange: [8, 86],
             }),
             opacity: bar.interpolate({
               inputRange: [0, 1.2],
@@ -77,7 +77,7 @@ function Visualizer({ isPlaying }: { isPlaying: boolean }) {
 
 function DetailPill({ label, value }: { label: string; value: string }) {
   return (
-    <View className="rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2">
+    <View className="flex-1 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2">
       <Text className="text-[10px] uppercase tracking-widest text-slate-400">{label}</Text>
       <Text className="mt-1 text-sm font-semibold text-slate-100">{value}</Text>
     </View>
@@ -86,9 +86,32 @@ function DetailPill({ label, value }: { label: string; value: string }) {
 
 export default function App() {
   const soundRef = useRef<Audio.Sound | null>(null);
+  const rotateAnim = useRef(new Animated.Value(0)).current;
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [songName, setSongName] = useState('Loading current shabad...');
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 13000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start();
+  }, [rotateAnim]);
+
+  const rotatingStyle = {
+    transform: [
+      {
+        rotate: rotateAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '360deg'],
+        }),
+      },
+    ],
+  };
 
   const fetchSong = useCallback(async () => {
     try {
@@ -111,9 +134,11 @@ export default function App() {
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
         staysActiveInBackground: true,
-        interruptionModeAndroid: 1,
+        interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+        interruptionModeIOS: InterruptionModeIOS.DuckOthers,
         shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
+        playsInSilentModeIOS: true,
       });
     };
 
@@ -154,8 +179,14 @@ export default function App() {
     <SafeAreaView className="flex-1 bg-slate-950">
       <StatusBar style="light" />
 
-      <View className="absolute -left-16 top-24 h-56 w-56 rounded-full bg-cyan-500/10" />
-      <View className="absolute -right-20 bottom-20 h-64 w-64 rounded-full bg-indigo-500/10" />
+      <Animated.View
+        style={rotatingStyle}
+        className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-cyan-500/15"
+      />
+      <Animated.View
+        style={rotatingStyle}
+        className="absolute -right-24 bottom-20 h-72 w-72 rounded-full bg-indigo-500/20"
+      />
 
       <View className="flex-1 items-center justify-center px-5">
         <View className="w-full rounded-[32px] border border-slate-700/80 bg-slate-900/95 p-6 shadow-2xl shadow-cyan-500/20">
@@ -189,11 +220,12 @@ export default function App() {
           <View className="mt-6 flex-row items-center justify-between gap-2">
             <DetailPill label="Status" value={isPlaying ? 'Playing' : 'Paused'} />
             <DetailPill label="Quality" value="HD Stream" />
-            <DetailPill label="Mode" value="Dark" />
+            <DetailPill label="Android" value="Background OK" />
           </View>
 
           <Text className="mt-5 text-center text-xs text-slate-500">
-            Always-on playback for peaceful listening.
+            Playback stays active in background. For full Android lock-screen media controls,
+            integrate a media-session library (Track Player) in a custom development build.
           </Text>
         </View>
       </View>
