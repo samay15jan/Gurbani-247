@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gurbani 24/7</title>
+
+<style>
+
+body{
+  margin:0;
+  font-family:system-ui;
+  background:#020617;
+  color:white;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:hidden;
+}
+
+/* rotating glow background */
+
+.glow{
+  position:absolute;
+  width:420px;
+  height:420px;
+  border-radius:50%;
+  filter:blur(80px);
+  opacity:0.25;
+  animation:spin 30s linear infinite;
+}
+
+.glow.cyan{
+  background:#22d3ee;
+  top:-120px;
+  left:-120px;
+}
+
+.glow.indigo{
+  background:#6366f1;
+  bottom:-120px;
+  right:-120px;
+}
+
+@keyframes spin{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+
+/* card */
+
+.wrapper{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
+}
+
+.card{
+  width:360px;
+  padding:30px;
+  background:#0f172a;
+  border-radius:32px;
+  border:1px solid #334155;
+  text-align:center;
+  z-index:1;
+}
+
+/* headings */
+
+.label{
+  font-size:11px;
+  letter-spacing:3px;
+  color:#67e8f9;
+}
+
+.title{
+  font-size:38px;
+  font-weight:900;
+  margin-top:10px;
+}
+
+.song{
+  margin-top:14px;
+  font-size:14px;
+  color:#cbd5f5;
+}
+
+.artist{
+  font-size:12px;
+  color:#64748b;
+}
+
+/* visualizer */
+
+.visualizer{
+  margin-top:24px;
+  height:80px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  gap:5px;
+  padding:10px;
+  border-radius:16px;
+  background:#020617;
+  border:1px solid #334155;
+}
+
+.bar{
+  width:10px;
+  background:#67e8f9;
+  border-radius:10px;
+  height:10px;
+  opacity:0.8;
+  transition:height 220ms ease-in-out, opacity 220ms ease-in-out;
+}
+
+/* button */
+
+.play{
+  margin-top:25px;
+  width:100%;
+  padding:15px;
+  border:none;
+  border-radius:16px;
+  font-size:18px;
+  font-weight:800;
+  background:#22d3ee;
+  cursor:pointer;
+}
+
+/* pills */
+
+.pills{
+  margin-top:20px;
+  display:flex;
+  gap:8px;
+}
+
+.pill{
+  flex:1;
+  background:#1e293b;
+  border:1px solid #334155;
+  border-radius:12px;
+  padding:10px;
+}
+
+.pill small{
+  display:block;
+  font-size:9px;
+  letter-spacing:2px;
+  color:#94a3b8;
+}
+
+.pill span{
+  font-size:13px;
+  font-weight:600;
+}
+
+/* footer */
+
+.footer{
+  margin-top:24px;
+  font-size:11px;
+  color:#64748b;
+}
+
+.footer a{
+  color:#94a3b8;
+  text-decoration:none;
+}
+
+/* download button */
+
+.download{
+  width:360px;
+  text-align:center;
+  padding:14px;
+  border-radius:16px;
+  background:#22d3ee;
+  font-weight:700;
+  text-decoration:none;
+  color:black;
+  margin-top:10px
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="glow cyan"></div>
+<div class="glow indigo"></div>
+
+<div class="wrapper">
+
+<div class="card">
+
+<div class="label">LIVE RADIO</div>
+<div class="title">Gurbani 24/7</div>
+
+<div class="song" id="song">Loading...</div>
+<div class="artist" id="artist"></div>
+
+<div class="visualizer" id="visualizer"></div>
+
+<button class="play" onclick="toggle()" id="playbtn">
+▶ Play
+</button>
+
+<div class="pills">
+<div class="pill">
+<small>QUALITY</small>
+<span>HD Stream</span>
+</div>
+
+<div class="pill">
+<small>STATUS</small>
+<span>Live</span>
+</div>
+
+<div class="pill">
+<small>UPTIME</small>
+<span>24×7</span>
+</div>
+</div>
+
+<div class="footer">
+Source: <a href="http://www.gurbanikirtan247.com/">gurbanikirtan247.com</a><br>
+Created by <a href="https://github.com/samay15jan">samay15jan</a>
+</div>
+
+</div>
+
+<a class="download"
+href="https://github.com/samay15jan/Gurbani-247/releases/latest">
+Download for Android
+</a>
+
+</div>
+
+<script>
+
+const STREAM_URL = "https://gurbanikirtan.radioca.st/start.mp3"
+const SONG_URL = "https://gurbanikirtan.radioca.st/currentsong?sid=1"
+
+const audio = new Audio(STREAM_URL)
+
+let playing=false
+
+function toggle(){
+
+  const btn = document.getElementById("playbtn")
+
+  if(playing){
+    audio.pause()
+    btn.innerText="▶ Play"
+  }else{
+    audio.play()
+    btn.innerText="❚❚ Pause"
+  }
+
+  playing=!playing
+}
+
+/* song fetch */
+
+async function fetchSong(){
+
+  try{
+    const r = await fetch(SONG_URL)
+    const t = (await r.text()).trim()
+
+    if(t.includes(" - ")){
+      const [artist,song] = t.split(" - ")
+      document.getElementById("song").innerText = song
+      document.getElementById("artist").innerText = artist
+    }
+
+  }catch{}
+}
+
+fetchSong()
+setInterval(fetchSong,15000)
+
+/* visualizer */
+
+const vis = document.getElementById("visualizer")
+
+for(let i=0;i<24;i++){
+  const bar=document.createElement("div")
+  bar.className="bar"
+  vis.appendChild(bar)
+}
+
+const bars=document.querySelectorAll(".bar")
+
+setInterval(()=>{
+
+  if(!playing){
+    bars.forEach(b=>{
+      b.style.height="8px"
+      b.style.opacity="0.4"
+    })
+    return
+  }
+
+  bars.forEach((b,i)=>{
+    const h=Math.random()*65+12
+    b.style.height=h+"px"
+    b.style.opacity=0.6+Math.random()*0.4
+  })
+
+},180)
+
+</script>
+
+</body>
+</html>
