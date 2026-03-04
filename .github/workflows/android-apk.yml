@@ -13,46 +13,57 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
 
-      - name: Set production env
+      - name: Set production environment
         run: echo "NODE_ENV=production" >> $GITHUB_ENV
 
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - run: yes | sdkmanager --licenses
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses
 
-      - run: npm ci --omit=dev
+      - name: Install dependencies
+        run: npm ci --omit=dev
 
-      - run: echo "EXPO_NO_DAEMON=1" >> $GITHUB_ENV
+      - name: Disable Expo daemon
+        run: echo "EXPO_NO_DAEMON=1" >> $GITHUB_ENV
 
-      - run: npx expo prebuild -p android --non-interactive
+      - name: Prebuild Expo Android
+        run: npx expo prebuild -p android --non-interactive
 
-      - run: chmod +x android/gradlew
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
 
-      - run: cd android && ./gradlew assembleRelease -PnewArchEnabled=false
+      - name: Build Release APK
+        run: cd android && ./gradlew assembleRelease -PnewArchEnabled=false
 
-      - name: Rename APK
+      - name: Prepare version and rename APK
         run: |
           VERSION="v1.0.${{ github.run_number }}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
           mv android/app/build/outputs/apk/release/app-release.apk gurbani-247-$VERSION.apk
 
-      - name: Create Release
+      - name: Create GitHub Release and Upload APK
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Gurbani 24/7 Build v1.0.${{ github.run_number }}
-          files: gurbani-247-$VERSION-v1.0.${{ github.run_number }}.apk
+          tag_name: ${{ env.VERSION }}
+          name: Gurbani 24/7 Build ${{ env.VERSION }}
+          files: gurbani-247-${{ env.VERSION }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
