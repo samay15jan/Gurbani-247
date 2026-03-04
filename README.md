@@ -1,13 +1,14 @@
 # Gurbani 24/7 (React Native)
 
-A simple Android-ready React Native app that streams live Gurbani kirtan with:
+A React Native + Expo app that runs on **Android and Web** with the same UI and live Gurbani stream experience:
 
 - Play / Pause button
 - "Gurbani 24/7" title
 - Current song text fetched from:
   - `https://gurbanikirtan.radioca.st/currentsong?sid=1`
 - Minimal animated visualizer
-- Background playback enabled in the app audio mode
+- **Download latest Android APK** button (auto-detects latest APK asset from GitHub Releases, with fallback to latest release page)
+- Background playback enabled in app audio mode (native), web audio playback for browser
 - Tailwind-based UI using NativeWind
 
 ## Stream URL
@@ -20,13 +21,17 @@ A simple Android-ready React Native app that streams live Gurbani kirtan with:
    ```bash
    npm install
    ```
-2. Start Metro:
+2. Start Expo for development:
    ```bash
    npm run start
    ```
 3. Run on Android device/emulator:
    ```bash
    npm run android
+   ```
+4. Run in the browser:
+   ```bash
+   npm run web
    ```
 
 ## Build APK with GitHub Actions

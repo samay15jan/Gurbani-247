@@ -13,11 +13,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Battery from 'expo-battery';
 import * as Network from 'expo-network';
-import TrackPlayer, {
-  Capability,
-  State,
-  usePlaybackState,
-} from 'react-native-track-player';
 import * as NavigationBar from 'expo-navigation-bar';
 import { Platform } from 'react-native';
 import { Image } from "react-native";
@@ -27,6 +22,7 @@ const artwork = Image.resolveAssetSource(
 ).uri;
 const STREAM_URL = 'https://gurbanikirtan.radioca.st/start.mp3';
 const SONG_URL = 'https://gurbanikirtan.radioca.st/currentsong?sid=1';
+const LATEST_RELEASE_FALLBACK = 'https://github.com/samay15jan/Gurbani-247/releases/latest';
 const BAR_COUNT = 24;
 
 /* ---------------- VISUALIZER (UNCHANGED) ---------------- */
@@ -108,8 +104,8 @@ function DetailPill({ label, value }: { label: string; value: string }) {
 /* ---------------- MAIN APP ---------------- */
 
 export default function App() {
-  const playbackState = usePlaybackState();
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const webAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -120,6 +116,8 @@ export default function App() {
   const [battery, setBattery] = useState("—");
   const [network, setNetwork] = useState("—");
   const [time, setTime] = useState("");
+  const [apkUrl, setApkUrl] = useState(LATEST_RELEASE_FALLBACK);
+  const [apkLabel, setApkLabel] = useState('Download latest Android APK');
 
   /* ---------------- FULLSCREEN ---------------- */
 
@@ -177,8 +175,15 @@ export default function App() {
   /* ---------------- BATTERY ---------------- */
 
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      setBattery('Web');
+      return;
+    }
+
     Battery.getBatteryLevelAsync().then(level => {
       setBattery(`${Math.round(level * 100)}%`);
+    }).catch(() => {
+      setBattery('Unknown');
     });
   }, []);
 
@@ -187,13 +192,24 @@ export default function App() {
   useEffect(() => {
     Network.getNetworkStateAsync().then(state => {
       setNetwork(state.type ?? "Unknown");
+    }).catch(() => {
+      setNetwork('Unknown');
     });
   }, []);
 
   /* ---------------- TRACK PLAYER SETUP ---------------- */
 
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      webAudioRef.current = new Audio(STREAM_URL);
+      webAudioRef.current.preload = 'none';
+      return;
+    }
+
     const setup = async () => {
+      const TrackPlayer = (await import('react-native-track-player')).default;
+      const { Capability } = await import('react-native-track-player');
+
       await TrackPlayer.setupPlayer();
 
       await TrackPlayer.updateOptions({
@@ -221,7 +237,33 @@ export default function App() {
       });
     };
 
-    setup();
+    setup().catch(() => {
+      setIsPlaying(false);
+    });
+  }, []);
+
+  /* ---------------- APK LINK ---------------- */
+
+  useEffect(() => {
+    const loadLatestApk = async () => {
+      try {
+        const response = await fetch('https://api.github.com/repos/samay15jan/Gurbani-247/releases/latest');
+        const data = await response.json();
+
+        if (Array.isArray(data.assets)) {
+          const apkAsset = data.assets.find((asset: { name: string }) => asset.name.toLowerCase().endsWith('.apk'));
+
+          if (apkAsset?.browser_download_url) {
+            setApkUrl(apkAsset.browser_download_url);
+            setApkLabel(`Download ${apkAsset.name}`);
+          }
+        }
+      } catch {
+        setApkUrl(LATEST_RELEASE_FALLBACK);
+      }
+    };
+
+    loadLatestApk();
   }, []);
 
   /* ---------------- FETCH SONG ---------------- */
@@ -236,10 +278,14 @@ export default function App() {
         setArtist(a);
         setSongName(s);
 
-        await TrackPlayer.updateMetadataForTrack(0, {
-          title: s,
-          artist: a,
-        });
+        if (Platform.OS !== 'web') {
+          const TrackPlayer = (await import('react-native-track-player')).default;
+
+          await TrackPlayer.updateMetadataForTrack(0, {
+            title: s,
+            artist: a,
+          });
+        }
       }
     } catch { }
   }, []);
@@ -255,14 +301,37 @@ export default function App() {
   const togglePlayback = async () => {
     setIsLoading(true);
 
-    const state = await TrackPlayer.getState();
+    if (Platform.OS === 'web') {
+      const audio = webAudioRef.current;
 
-    if (state === State.Playing) {
-      await TrackPlayer.pause();
-      setIsPlaying(false);
+      if (!audio) {
+        setIsLoading(false);
+        return;
+      }
+
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        try {
+          await audio.play();
+          setIsPlaying(true);
+        } catch {
+          setIsPlaying(false);
+        }
+      }
     } else {
-      await TrackPlayer.play();
-      setIsPlaying(true);
+      const TrackPlayer = (await import('react-native-track-player')).default;
+      const { State } = await import('react-native-track-player');
+      const state = await TrackPlayer.getState();
+
+      if (state === State.Playing) {
+        await TrackPlayer.pause();
+        setIsPlaying(false);
+      } else {
+        await TrackPlayer.play();
+        setIsPlaying(true);
+      }
     }
 
     setIsLoading(false);
@@ -322,6 +391,15 @@ export default function App() {
             <DetailPill label="Time" value={time} />
             <DetailPill label="Battery" value={battery} />
           </View>
+
+          <Pressable
+            onPress={() => Linking.openURL(apkUrl)}
+            className="mt-4 items-center rounded-xl border border-emerald-300/40 bg-emerald-400 px-4 py-3"
+          >
+            <Text className="text-sm font-bold text-emerald-950">
+              {apkLabel}
+            </Text>
+          </Pressable>
 
           <Text
             onPress={() => Linking.openURL("http://www.gurbanikirtan247.com/")}
