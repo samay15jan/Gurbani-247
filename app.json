@@ -5,29 +5,33 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
     "assetBundlePatterns": [
       "**/*"
     ],
     "android": {
-      "package": "com.gurbani247.app",
+      "edgeToEdgeEnabled": true,
+      "package": "com.samay15jan.gurbani247",
       "permissions": [
         "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "WAKE_LOCK",
-        "INTERNET",
-        "FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-      ]
+        "INTERNET"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0f172a"
+      },
+      "icon": "./assets/icon.png"
     },
     "plugins": [
-      [
-        "expo-av",
-        {
-          "microphonePermission": false
-        }
-      ],
       "expo-asset"
     ],
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "ios": {
+      "bundleIdentifier": "com.samay15jan.gurbani247"
     }
   }
 }
