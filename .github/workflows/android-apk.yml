@@ -9,12 +9,19 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
+
+      - name: Set production env
+        run: echo "NODE_ENV=production" >> $GITHUB_ENV
 
       - uses: actions/setup-java@v4
         with:
@@ -25,7 +32,7 @@ jobs:
 
       - run: yes | sdkmanager --licenses
 
-      - run: npm install
+      - run: npm ci --omit=dev
 
       - run: echo "EXPO_NO_DAEMON=1" >> $GITHUB_ENV
 
@@ -33,9 +40,19 @@ jobs:
 
       - run: chmod +x android/gradlew
 
-      - run: cd android && ./gradlew assembleRelease
+      - run: cd android && ./gradlew assembleRelease -PnewArchEnabled=false
 
-      - uses: actions/upload-artifact@v4
+      - name: Rename APK
+        run: |
+          VERSION="v1.0.${{ github.run_number }}"
+          mv android/app/build/outputs/apk/release/app-release.apk gurbani-247-$VERSION.apk
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
         with:
-          name: release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
+          tag_name: v1.0.${{ github.run_number }}
+          name: Gurbani 24/7 Build v1.0.${{ github.run_number }}
+          files: gurbani-247-$VERSION-v1.0.${{ github.run_number }}.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
